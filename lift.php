@@ -54,32 +54,68 @@ Example Request  (151) Passangere from 5th floor going up (Passanger Status - wa
         /* here we using request validators
         must contains 3 digits if we have less than 9 floor building
     */
+        for ($i = 0; $i < 10; $i++) {
+            $this->_CallUp[$i] = 0;
+        }
 
         for ($i = 0; $i < 10; $i++) {
             $this->_CallDown[$i] = 0;
         }
-        for ($i = 0; $i < 10; $i++) {
-            $this->_CallUp[$i] = 0;
-        }
+
         if (isset($request)) {
             $this->_Request = $request;
         }
 
-        $this->_Request();
+        $this->_Request($this->_Request);
     }
 
     /* retrive request details from request */
-    public function _Request()
+    public function _Request($request_cod)
     {
         echo 'Elevator stoped at ' . $this->_Floor . ' floor' . '</br>';
-        $requestarray = str_split($this->_Request);
-        $this->_Direction = $requestarray[0];
-        $this->_FloorInfo = $requestarray[1];
-        $this->_Request_status_info = $requestarray[2];
-        $request = array('Direction' => $this->_Direction,
-            'Floor' => $this->_FloorInfo,
-            'RequestStatus' => $this->_Request_status_info);
-        echo 'Request is: ' . $this->_Request . ' that means to go ' . $this->_Floor . ' floor, direction ' . $this->_Direction . '</br>';
+        $requestarray = str_split($request_cod);
+
+        $_Direction           = $requestarray[0]; //
+        $_FloorInfo           = $requestarray[1]; //
+        $_Request_status_info = $requestarray[2]; //
+
+        $request = array('Direction' => $_Direction,
+            'Floor' => $_FloorInfo,
+            'RequestStatus' => $_Request_status_info);
+        echo 'Request is: ' . $request_cod . ' that means to go ' . $_FloorInfo . ' floor, direction ' . $_Direction . '</br>';
+
+        if($_FloorInfo > $this->_Floor){
+
+            for ($i = 1; $i < 10; $i++) {
+                if ($i == $_FloorInfo) {
+                    $this->_CallUp[$i] = 1;
+                } else {
+                    ($this->_CallUp[$i] != 1 ? $this->_CallUp[$i] = 0 : $this->_CallUp[$i] = 1);
+                }
+                echo $this->_CallUp[$i];
+            }
+                echo '  CallUp Array'.'</br>';
+
+        }elseif ($_FloorInfo < $this->_Floor){
+
+            for ($i = 1; $i < 10; $i++) {
+                if ($i == $_FloorInfo) {
+                    $this->_CallDown[$i] = 1;
+                } else {
+                    ($this->_CallDown[$i] != 1 ? $this->_CallDown[$i] = 0 : $this->_CallDown[$i] = 1);
+                }
+                echo $this->_CallDown[$i];
+            }
+            echo '  CallDown Array'.'</br>';
+
+        }elseif ($_FloorInfo == $this->_Floor){
+
+                echo "Going " . $this->_FloorInfo . 'floor, from ' . $this->_Floor . ' floor ' . '</br>';
+                echo "It is in the same floor so we just need open doors" . '</br>';
+                $this->_Status=2;
+                $this->OpenDoors();
+        }
+
         $this->Waiting_for_request();
         return $request;
     }
@@ -93,46 +129,38 @@ Example Request  (151) Passangere from 5th floor going up (Passanger Status - wa
 
     public function Waiting_for_request()
     {
-        // if we dont have a request for some period of time
-        // move elevator to start possition
-        if ($this->_Request_status_info = 0) {
-            $this->Move_Elevator_toStart();
-            $this->_Status = 2;
-            return 0;
-        } else {
-            if ($this->_FloorInfo = $this->_Floor) {
-                echo "Going " . $this->_FloorInfo . 'floor, from ' . $this->_Floor . ' floor ' . '</br>';
-                echo "It is in the same floor so we just need open doors" . '</br>';
-                $this->OpenDoors();
-
+        for ($i = 1; $i < 10; $i++) {
+            if ($this->_CallUp[$i] == 1) {
+                echo "Going UP to " . $i . ' floor, from ' . $this->_Floor . ' floor ' . '</br>';
+                echo "It is the different floor so we need make moving decision" . '</br>';
+                $this->_Status = 1; //Going UP
+                break;
             } else {
-                //  $this->Moving_Decision();
-            }
+                if ($this->_CallDown[$i] == 1) {
+                    echo "Going DOWN to " . $i . ' floor, from ' . $this->_Floor . ' floor ' . '</br>';
+                    echo "It is the different floor so we need make moving decision" . '</br>';
+                    $this->_Status = 0; //Going DOWN
+                    break;
 
+                }
+            }
         }
+        $this->Moving_Decision($i);
         return 0;
     }
 
     public function OpenDoors()
     {
+        $this->_CallUp[$this->_Floor] = 0;
+        $this->_CallDown[$this->_Floor] = 0;
+        //$this->_Status=2;
         echo "The doors are open on the " . $this->_Floor . '</br>';
-        $this->_Status = 3; // Open
-
         $this->Loading_Unloading();
     }
 
     public function Loading_Unloading()
     {
-        for ($i = 1; $i < 10; $i++) {
-
-                if ($this->_CallUp[$i] == 0 || $this->_CallDown[$i] == 0) {
-                    //$this->CloseDoors();
-
-            }else{
-                    $this->Move_Elevator_toStart();
-                }
-        }
-        $accptReq = 5;
+        $accptReq = rand(1,9);
         echo "After loading, passenger, pushing floor button inside elevator for example " . $accptReq . 'th floor' . '</br>';
         // waiting to accept request
         // for example
@@ -143,82 +171,67 @@ Example Request  (151) Passangere from 5th floor going up (Passanger Status - wa
                 $this->_Call_from_inside_elevator[$i] = 0;
             }
         }
-
-
         echo 'Change _Call_from_inside_elevator array - ';
         for ($i = 1; $i < 10; $i++) {
             echo $this->_Call_from_inside_elevator[$i];
         }
         echo '</br>';
-        if ($this->_Floor == $i) {
-            $this->OpenDoors();
-        } else {
-            $this->CloseDoors();
-        }
+        $this->CloseDoors();
+
     }
 
     public function CloseDoors()
     {
         echo 'Closing doors' . '</br>';
-        //After specific period of time
-        $this->_Status = 4; // Close
+        for ($i = 1; $i < 10; $i++) {
+            if ($this->_Call_from_inside_elevator[$i] == 1 && $i!=$this->_Floor){
+                echo 'We have One request from inside of Elevator. Going to '.$i.' floor. Generating new request ';
+            };
 
-        $this->Moving_Decision();
+        }
+        return 0;
+    }
+
+    public function Moving_Decision($i)
+    {
+        if($this->_Status == 0){
+             $this->GoingDOWN($i);
+
+        }elseif ($this->_Status == 1){
+                $this->GoingUP($i);
+
+        }elseif ($this->_Status == 2){
+
+            echo 'Closing doors' . '</br>';
+            $this->_Request(191);
+
+        }
+
+
 
     }
 
-    public function Moving_Decision()
+    public function GoingUP($toFloor)
     {
-        for ($i = 1; $i < 10; $i++) {
-            if ($this->_Call_from_inside_elevator[$i] == 1) {
-                if ($this->_Floor < $i) {
-                    echo 'Moving decision made Going UP to ' . $i . ' floor' . '</br>';
-                    $this->GoingUP();
-                    $this->_Status = 1; // Going up
-                }
-                if ($this->_Floor > $i) {
-                    echo 'Moving decision made Going DOWN to ' . $i . ' floor' . '</br>';
-                    // $this->GoingDOWN();
-                    $this->_Status = 2;
-                }
-            }
-        }
-
-    }
-
-    public function GoingUP()
-    {
-
-        for ($i = 1; $i < 10; $i++) {
-            if ($this->_Call_from_inside_elevator[$i] == 1) {
-                $this->_CallUp[$i] = 1;
-            } else {
-                $this->_CallUp[$i] = 0;
-            }
-        }
-        $i = $this->_Floor;
-        while ($this->_CallUp[$i] == 0) {
+        while ($this->_Floor != $toFloor) {
             $this->_Floor++;
-            echo 'Going up to ' . $this->_Floor;
-            $i++;
+            echo 'Going up to ' . $this->_Floor . '</br>';
         }
-        $this->_CallUp[$this->_Floor] = 0;
+        echo 'Elevator is in requested ' . $this->_Floor . ' floor' . '</br>';
         $this->OpenDoors();
-
+        return 0;
     }
 
     public
-    function GoingDOWN()
+    function GoingDOWN($toFloor)
     {
-        for ($i = $this->_Floor; $i == $this->_Request()['Floor']; $i--) {
-
-            // check if there is no other request in same direction
-            // if there is, stop at that level and go to function Waiting_for_request()
-            $this->_Floor = $this->_Floor - 1;
+        while ($this->_Floor != $toFloor) {
+            $this->_Floor--;
+            echo 'Going up to ' . $this->_Floor . '</br>';
         }
-
-        return $this->_Floor;
-
+        echo 'Elevator is in requested ' . $this->_Floor . ' floor' . '</br>';
+        $this->OpenDoors();
+        return 0;
 
     }
 
